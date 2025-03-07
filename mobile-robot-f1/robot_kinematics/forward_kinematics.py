@@ -58,7 +58,7 @@ class Robot:
         
         # graphics
         self.image = pg.image.load(image)
-        self.image = pg.transform.scale(self.image, (45, 45))
+        self.image = pg.transform.scale(self.image, (60, 60))
         self.rotated = self.image
         self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
         
@@ -108,7 +108,7 @@ class main:
         
         # robot
         self.env = Environment((self.map_size, self.map_size))
-        self.robot_size = 45 # 45x45 - 15cm
+        self.robot_size = 60 # 45x45 - 15cm
         self.robot_image = pg.transform.scale(pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\access\Robot.png"), (self.robot_size, self.robot_size))
         self.robot = Robot((200, 200), r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\access\Robot.png", 1)
         self.robot.image = self.robot_image

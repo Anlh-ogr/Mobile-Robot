@@ -58,6 +58,7 @@ class Robot:
         
         # graphics
         self.image = pg.image.load(image)
+        self.image = pg.transform.scale(self.image, (45, 45))
         self.rotated = self.image
         self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
         
@@ -77,6 +78,7 @@ class Robot:
         if event is not None:
             if event.type == pg.KEYDOWN:
                 rotation_speed = 0.5
+                linear_speed = 100
                 if event.key == pg.K_a:     # left
                     self.velo_x = -100
                 if event.key == pg.K_d:     # right
@@ -98,9 +100,20 @@ class Robot:
 class main:
     def __init__ (self):
         pg.init()
-        self.env = Environment((600, 800))
+        
+        # map
+        self.map_size = 900 # 900x900 - 3m
+        self.map = pg.display.set_mode((self.map_size, self.map_size))
+        self.maps = pg.transform.scale(pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\map\m1.png"), (self.map_size, self.map_size))
+        
+        # robot
+        self.env = Environment((self.map_size, self.map_size))
+        self.robot_size = 45 # 45x45 - 15cm
+        self.robot_image = pg.transform.scale(pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\access\Robot.png"), (self.robot_size, self.robot_size))
         self.robot = Robot((200, 200), r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\access\Robot.png", 1)
+        self.robot.image = self.robot_image
         self.running = True
+        
         
     def run(self):
         dt = 0
@@ -114,7 +127,12 @@ class main:
             dt = (current_time - last_time)/1000
             self.robot.move(dt)
             self.robot.update(dt)
-            self.env.map.fill(self.env.black)
+            
+            # map
+            # self.env.map.fill(self.env.black)
+            self.env.map.fill(self.env.white)
+            self.env.map.blit(self.maps, (0, 0))
+            
             self.env.frame((self.robot.x_pos, self.robot.y_pos), self.robot.theta)
             self.robot.draw(self.env.map)
             self.env.trail((self.robot.x_pos, self.robot.y_pos))

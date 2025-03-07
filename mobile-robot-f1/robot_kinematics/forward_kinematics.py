@@ -33,7 +33,7 @@ class Environment:
     def trail(self, position):
         for idx in range(0, len(self.trail_set)-1):
             pg.draw.line(self.map, self.blue, (self.trail_set[idx][0], self.trail_set[idx][1]), (self.trail_set[idx+1][0], self.trail_set[idx+1][1]))
-        if self.trail_set.__sizeof__() > 30000:
+        if self.trail_set.__sizeof__() > 2000:
             self.trail_set.pop(0)
         self.trail_set.append(position)
         
@@ -76,19 +76,24 @@ class Robot:
     def control(self, event):
         if event is not None:
             if event.type == pg.KEYDOWN:
-                if event.key == pg.K_KP4:
+                rotation_speed = 0.5
+                if event.key == pg.K_a:     # left
                     self.velo_x = -100
-                if event.key == pg.K_KP6:
+                if event.key == pg.K_d:     # right
                     self.velo_x = +100
-                if event.key == pg.K_KP8:
+                if event.key == pg.K_w:     # up
                     self.velo_y = -100
-                if event.key == pg.K_KP2:
+                if event.key == pg.K_s:     # down
                     self.velo_y = +100
-                if event.key == pg.K_KP5:
-                    self.theta += 0.1
-                if event.key == pg.K_KP0:
-                    self.theta -= 0.1
-    
+                if event.key == pg.K_q:     # rotate left
+                    self.theta -= rotation_speed
+                if event.key == pg.K_e:     # rotate right
+                    self.theta += rotation_speed
+            if event.type == pg.KEYUP:
+                if event.key in [pg.K_w, pg.K_s]:
+                    self.velo_y = 0
+                if event.key in [pg.K_a, pg.K_d]:
+                    self.velo_x = 0
             
 class main:
     def __init__ (self):

@@ -147,8 +147,8 @@ class Robot:
         self.rect = self.rotated.get_rect(center=(self.x_pos, self.y_pos))
         
     def sense(self, map_surface, env):
-        # Góc cố định: giữa (0°), trái (-50°), phải (+50°) so với trục xrobot (theta)
-        sensor_angles = [self.theta - math.radians(50), self.theta, self.theta + math.radians(50)]
+        # Góc cố định: giữa (0°), trái (-45°), phải (+45°) so với trục xrobot (theta)
+        sensor_angles = [self.theta - math.radians(45), self.theta, self.theta + math.radians(45)]
         self.sensors = []
         half_width = self.width // 2
         max_scan_distance = 600
@@ -256,15 +256,24 @@ class Robot:
             max_distance = distances[max_distance_idx]
             print(f"Điểm chạm xa nhất: {max_distance_point}, Khoảng cách: {max_distance:.2f}")
 
-            # Nhận diện đường đi mới hoặc góc cua dựa trên điểm chạm xa nhất
+            # Ưu tiên tiến gần đến vị trí có thể đi (xa hơn side_threshold)
             if max_distance > side_threshold and front_dist < front_threshold:
                 angle_to_point = math.atan2(max_distance_point[1] - self.y_pos, max_distance_point[0] - self.x_pos)
-                turn_angle = self.normalize_angle(angle_to_point - self.theta)
+                # Tính góc xoay để hướng về điểm chạm xa nhất
+                target_angle = self.normalize_angle(angle_to_point)
+                current_angle = self.theta
+                turn_angle = self.normalize_angle(target_angle - current_angle)
+
+                # Điều chỉnh góc xoay theo hướng tối ưu
+                if abs(turn_angle) > math.pi:
+                    turn_angle = -math.copysign(2 * math.pi - abs(turn_angle), turn_angle)
+                
+                # Xoay dần về hướng điểm chạm (thay vì xoay 90° cố định)
                 self.turn_direction = 1 if turn_angle > 0 else -1
                 self.is_turning = True
                 self.turn_steps = 0
                 self.last_turn = pg.time.get_ticks()
-                print(f"Phát hiện đường mới hoặc góc cua tại {max_distance_point}, xoay {'phải' if turn_angle > 0 else 'trái'}!")
+                print(f"Phát hiện đường mới tại {max_distance_point}, xoay {'phải' if turn_angle > 0 else 'trái'} để tiến gần!")
                 return
 
         # Kiểm tra cảm biến trực tiếp để rẽ nếu không có điểm chạm rõ ràng
@@ -344,7 +353,7 @@ class Robot:
         return is_l_shape or is_u_shape
     
     def draw_sensors(self, map, env):
-        sensor_angles = [self.theta - math.radians(50), self.theta, self.theta + math.radians(50)]
+        sensor_angles = [self.theta - math.radians(45), self.theta, self.theta + math.radians(45)]
         colors = [env.purple, env.yellow, env.orange]
         
         half_width = self.width // 2
@@ -362,7 +371,7 @@ class Main:
         self.map_size = 600
         self.map = pg.display.set_mode((self.map_size, self.map_size))
         self.maps = pg.transform.scale(
-            pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\map\m1.png"),
+            pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\map\m3.png"),
             (self.map_size, self.map_size))
         
         scale_factor = self.map_size / 900

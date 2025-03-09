@@ -1,24 +1,28 @@
 import pygame as pg
 import math
 import numpy as np
+import random
 
-# Lớp Environment: quản lý môi trường, giao diện hiển thị
+# Lớp Environment: quản lý môi trường và giao diện hiển thị
 class Environment:
     def __init__(self, dimension):
         self.black = (0, 0, 0)
         self.white = (255, 255, 255)
-        self.red = (255, 0, 0)
-        self.green = (0, 255, 0)
-        self.blue = (0, 0, 255)
-        self.purple = (128, 0, 128)
-        self.yellow = (255, 255, 0)
-        self.orange = (255, 165, 0)
+        self.red = (255, 0, 0)      # Màu cho trục x robot
+        self.green = (0, 255, 0)    # Màu cho trục y robot
+        self.blue = (0, 0, 255)     # Màu cho trail
+        self.yellow = (255, 255, 0) # Màu cho điểm bắt đầu
+        self.orange = (255, 165, 0) # Màu cho cảm biến bên trái
+        self.purple = (128, 0, 128) # Màu cho cảm biến phía trước
+        self.pink = (255, 105, 180) # Màu cho cảm biến bên phải
+        self.cyan = (0, 255, 255)   # Màu cho cảm biến xa trái (Far Left)
+        self.gold = (255, 215, 0)   # Màu cho cảm biến xa phải (Far Right)
         
         self.height = dimension[0]  # 600 pixel
         self.width = dimension[1]   # 600 pixel
         self.scale_factor = 600 / 900  # Tỷ lệ thu nhỏ từ 900x900 sang 600x600
         
-        pg.display.set_caption("Mô phỏng Robot trong Mê cung (Đi thẳng & Tìm đường)")
+        pg.display.set_caption("Mô phỏng Robot trong Mê cung (Cảm biến và Động học Ngược)")
         self.map = pg.display.set_mode((self.width, self.height))
         
         self.font = pg.font.SysFont('JetBrains Mono', 18)
@@ -30,12 +34,12 @@ class Environment:
         self.cell_size = 60  # 30cm ≈ 60 pixel sau scale
         self.trail_set = []
         self.visited_cells = {}  # Lưu ô đã đi qua với thứ tự
-        self.sensor_hit_points = []
         self.start_pos = (400 * self.scale_factor, 50 * self.scale_factor)  # Điểm vào
         self.exit_pos = (330, self.height - 10)  # Điểm ra
 
-    def info(self, position, sensors, status):
-        text = f"Vị trí:({position[0]:.2f}, {position[1]:.2f}) Cảm biến: L={sensors[0]:.2f} F={sensors[1]:.2f} R={sensors[2]:.2f} Trạng thái: {status}"
+    def info(self, position, status, front_dist, left_dist, right_dist, far_left_dist, far_right_dist):
+        text = (f"Vị trí: ({position[0]:.2f}, {position[1]:.2f}) Trạng thái: {status} | "
+                f"F: {front_dist:.1f} L: {left_dist:.1f} R: {right_dist:.1f} FL: {far_left_dist:.1f} FR: {far_right_dist:.1f}")
         self.text = self.font.render(text, True, self.white, self.black)
         self.map.blit(self.text, self.textRect)
         
@@ -60,7 +64,7 @@ class Environment:
         for idx in range(len(self.trail_set)-1):
             pg.draw.line(self.map, self.blue, self.trail_set[idx], self.trail_set[idx+1], 1)
         
-        pg.draw.circle(self.map, self.green, (int(self.start_pos[0]), int(self.start_pos[1])), 10)
+        pg.draw.circle(self.map, self.yellow, (int(self.start_pos[0]), int(self.start_pos[1])), 10)
         pg.draw.circle(self.map, self.red, (int(self.exit_pos[0]), int(self.exit_pos[1])), 10)
 
     def frame(self, position, rotation):
@@ -68,39 +72,68 @@ class Environment:
         centerX, centerY = position
         x_axis = (centerX + length_frame * math.cos(rotation), centerY + length_frame * math.sin(rotation))
         pg.draw.line(self.map, self.red, position, x_axis, 2)
+        y_axis = (centerX + length_frame * math.cos(rotation + math.pi/2), centerY + length_frame * math.sin(rotation + math.pi/2))
+        pg.draw.line(self.map, self.green, position, y_axis, 2)
 
-    def draw_sensor_hit_points(self):
-        for point in self.sensor_hit_points:
-            pg.draw.circle(self.map, (255, 0, 0), (int(point[0]), int(point[1])), 3)
+    def draw_sensors(self, position, front_pos, left_pos, right_pos, far_left_pos, far_right_pos):
+        # Cảm biến hiện tại
+        pg.draw.line(self.map, self.purple, position, front_pos, 2)  # Tím cho cảm biến phía trước
+        pg.draw.line(self.map, self.orange, position, left_pos, 2)   # Cam cho cảm biến bên trái
+        pg.draw.line(self.map, self.pink, position, right_pos, 2)    # Hồng cho cảm biến bên phải
+        
+        pg.draw.circle(self.map, self.purple, front_pos, 5)
+        pg.draw.circle(self.map, self.orange, left_pos, 5)
+        pg.draw.circle(self.map, self.pink, right_pos, 5)
+        
+        # Cảm biến mới
+        pg.draw.line(self.map, self.cyan, position, far_left_pos, 2)  # Xanh lam cho cảm biến xa trái
+        pg.draw.line(self.map, self.gold, position, far_right_pos, 2) # Vàng cho cảm biến xa phải
+        
+        pg.draw.circle(self.map, self.cyan, far_left_pos, 5)
+        pg.draw.circle(self.map, self.gold, far_right_pos, 5)
 
-# Lớp Robot: quản lý robot với rule đi thẳng và khám phá
+# Lớp Robot: điều khiển robot với cảm biến và động học ngược
 class Robot:
-    def __init__(self, start_position, image, width, map_size, exit_pos):
-        self.width = width  # 45 pixel ≈ 15cm sau scale
+    def __init__(self, start_position, image, width, map_size, exit_pos, map_surface):
+        self.width = width
         self.x_pos = start_position[0]
         self.y_pos = start_position[1]
         self.map_size = map_size
         self.theta = math.radians(270)  # Bắt đầu hướng xuống dưới
         self.exit_pos = exit_pos
+        self.map_surface = map_surface
         
-        self.base_speed = 40
+        self.base_speed = 15
         self.v_left = 0
         self.v_right = 0
         self.wheel_distance = 30
+        
+        self.sensor_range = 100  # Phạm vi cảm biến
+        self.front_sensor = 0
+        self.left_sensor = 0
+        self.right_sensor = 0
+        self.far_left_sensor = 0  # Cảm biến xa trái
+        self.far_right_sensor = 0 # Cảm biến xa phải
+        
+        self.front_pos = (self.x_pos, self.y_pos)
+        self.left_pos = (self.x_pos, self.y_pos)
+        self.right_pos = (self.x_pos, self.y_pos)
+        self.far_left_pos = (self.x_pos, self.y_pos)
+        self.far_right_pos = (self.x_pos, self.y_pos)
         
         self.image = pg.image.load(image)
         self.image = pg.transform.scale(self.image, (self.width, self.width))
         self.rotated = self.image
         self.rect = self.image.get_rect(center=(self.x_pos, self.y_pos))
         
-        self.sensors = [float('inf'), float('inf'), float('inf')]
-        self.path = []
         self.visited_cells = set()
-        self.stuck_counter = 0
-        self.last_position = (self.x_pos, self.y_pos)
-        self.collision_count = 0
-        self.last_safe_position = (self.x_pos, self.y_pos)
-        self.turn_attempts = 0  # Đếm số lần thử xoay (sẽ được đơn giản hóa)
+        self.status = "Running"
+        self.turn_history = []
+        self.max_history = 5
+        
+        self.initial_check = True
+        self.initial_steps = 0
+        self.initial_max_steps = 5
 
     def normalize_angle(self, angle):
         return ((angle + math.pi) % (2 * math.pi)) - math.pi
@@ -118,7 +151,9 @@ class Robot:
     def draw(self, map):
         map.blit(self.rotated, self.rect)
         
-    def move(self, dt, map_surface):
+    def move(self, dt):
+        self.update_sensors()
+        self.control()
         self.update_kinematics(dt)
         
         new_x = self.x_pos
@@ -129,8 +164,8 @@ class Robot:
         half_width = self.width // 2
         for x in range(int(new_x - half_width), int(new_x + half_width), 5):
             for y in range(int(new_y - half_width), int(new_y + half_width), 5):
-                if 0 <= x < map_surface.get_width() and 0 <= y < map_surface.get_height():
-                    if map_surface.get_at((x, y)) == (0, 0, 0, 255):
+                if 0 <= x < self.map_surface.get_width() and 0 <= y < self.map_surface.get_height():
+                    if self.map_surface.get_at((x, y)) == (0, 0, 0, 255):
                         collision = True
                         break
             if collision:
@@ -140,127 +175,234 @@ class Robot:
             not (0 <= new_y <= self.map_size - self.width) or collision):
             self.v_left = 0
             self.v_right = 0
-            self.x_pos = self.last_safe_position[0]
-            self.y_pos = self.last_safe_position[1]
-            self.collision_count += 1
-            if self.collision_count > 2:
-                self.collision_count = 0
-                print("Va chạm, kiểm tra hướng mới!")
+            self.status = "Collision"
         else:
             grid_x = int(self.x_pos // 60)
             grid_y = int(self.y_pos // 60)
-            cell_key = (grid_x, grid_y)
-            if cell_key not in self.visited_cells:
-                self.path.append((self.x_pos, self.y_pos))
-                self.visited_cells.add(cell_key)
-            self.last_safe_position = (self.x_pos, self.y_pos)
-            self.collision_count = 0
+            self.visited_cells.add((grid_x, grid_y))
         
         self.rect = self.rotated.get_rect(center=(self.x_pos, self.y_pos))
-        self.check_stuck()
         print(f"Vị trí: ({self.x_pos:.2f}, {self.y_pos:.2f}), Góc: {math.degrees(self.theta):.2f}")
     
     def update(self, dt):
         self.rotated = pg.transform.rotate(self.image, -math.degrees(self.theta))
         self.rect = self.rotated.get_rect(center=(self.x_pos, self.y_pos))
+    
+    def update_sensors(self):
+        # Cảm biến hiện tại: ±60°
+        self.front_sensor, self.front_pos = self.measure_distance(self.theta)  # 0° (phía trước)
+        self.left_sensor, self.left_pos = self.measure_distance(self.theta + math.radians(60))  # 60° bên trái
+        self.right_sensor, self.right_pos = self.measure_distance(self.theta - math.radians(60))  # 60° bên phải
         
-    def sense(self, map_surface, env):
-        sensor_angles = [self.theta - math.radians(45), self.theta, self.theta + math.radians(45)]
-        self.sensors = []
-        half_width = self.width // 2
-        max_scan_distance = 200
-        env.sensor_hit_points.clear()
+        # Cảm biến mới: ±90°
+        self.far_left_sensor, self.far_left_pos = self.measure_distance(self.theta + math.radians(90))  # 90° bên trái
+        self.far_right_sensor, self.far_right_pos = self.measure_distance(self.theta - math.radians(90))  # 90° bên phải
+    
+    def measure_distance(self, angle):
+        distance = 0
+        max_range = self.sensor_range
+        step = 1
+        
+        x = self.x_pos
+        y = self.y_pos
+        
+        while distance < max_range:
+            x = self.x_pos + distance * math.cos(angle)
+            y = self.y_pos + distance * math.sin(angle)
+            
+            if not (0 <= x < self.map_size and 0 <= y < self.map_size):
+                return distance, (x, y)
+            
+            if self.map_surface.get_at((int(x), int(y))) == (0, 0, 0, 255):
+                return distance, (x, y)
+            
+            distance += step
+        
+        return max_range, (x, y)
 
-        for idx, angle in enumerate(sensor_angles):
-            max_distance = 0
-            hit_point = None
-            start_x = self.x_pos + half_width * math.cos(angle)
-            start_y = self.y_pos + half_width * math.sin(angle)
-            sensor_points = np.array([[start_x + i * math.cos(angle), start_y + i * math.sin(angle)] 
-                                    for i in range(0, max_scan_distance, 5)])
-
-            for point in sensor_points:
-                x, y = int(point[0]), int(point[1])
-                grid_x = int(x // 60)
-                grid_y = int(y // 60)
-                cell_key = (grid_x, grid_y)
-                if (x < 0 or y < 0 or x >= map_surface.get_width() or y >= map_surface.get_height() or
-                    map_surface.get_at((x, y)) == (0, 0, 0, 255) or cell_key in env.visited_cells):
-                    max_distance = math.dist((start_x, start_y), point)
-                    hit_point = (point[0], point[1])
-                    break
+    def initial_direction_check(self):
+        threshold = 20
+        directions = {
+            "front": self.front_sensor > threshold,
+            "left": self.left_sensor > threshold,
+            "right": self.right_sensor > threshold,
+            "far_left": self.far_left_sensor > threshold,
+            "far_right": self.far_right_sensor > threshold
+        }
+        
+        possible_directions = sum(directions.values())
+        
+        dx = self.exit_pos[0] - self.x_pos
+        dy = self.exit_pos[1] - self.y_pos
+        desired_angle = math.atan2(dy, dx)
+        
+        if possible_directions == 1:
+            if directions["front"]:
+                self.theta = desired_angle
+            elif directions["left"] or directions["far_left"]:
+                self.theta += math.radians(90)
+            elif directions["right"] or directions["far_right"]:
+                self.theta -= math.radians(90)
+            self.v_left = self.base_speed
+            self.v_right = self.base_speed
+            return True
+        
+        elif (directions["left"] or directions["far_left"]) and (directions["right"] or directions["far_right"]) and not directions["front"]:
+            angle_to_left = self.normalize_angle(desired_angle - (self.theta + math.radians(45)))
+            angle_to_right = self.normalize_angle(desired_angle - (self.theta - math.radians(45)))
+            
+            if abs(angle_to_left) < abs(angle_to_right):
+                self.theta += math.radians(90)
             else:
-                max_distance = float('inf')
-
-            self.sensors.append(max_distance if max_distance < max_scan_distance else float('inf'))
-            if hit_point:
-                env.sensor_hit_points.append(hit_point)
-
-        print(f"Cảm biến: Trái={self.sensors[0]:.2f}, Giữa={self.sensors[1]:.2f}, Phải={self.sensors[2]:.2f}")
-    
-    def check_stuck(self):
-        if math.dist((self.x_pos, self.y_pos), self.last_position) < 1:
-            self.stuck_counter += 1
-            if self.stuck_counter > 20:
-                self.stuck_counter = 0
-                print("Bị kẹt, kiểm tra hướng mới!")
-        else:
-            self.stuck_counter = 0
-        self.last_position = (self.x_pos, self.y_pos)
-    
-    def control(self, map_surface, env):
-        right_dist, front_dist, left_dist = self.sensors[2], self.sensors[1], self.sensors[0]
-        base_speed = 40
-        front_threshold = 20
-        side_threshold = 15
+                self.theta -= math.radians(90)
+            self.v_left = self.base_speed
+            self.v_right = self.base_speed
+            return True
         
-        # Kiểm tra nếu đến gần điểm ra
-        if math.dist((self.x_pos, self.y_pos), self.exit_pos) < 50:
+        elif possible_directions >= 3:
+            self.theta = desired_angle
+            self.v_left = self.base_speed
+            self.v_right = self.base_speed
+            return True
+        
+        elif possible_directions == 2:
+            angle_to_left = self.normalize_angle(desired_angle - (self.theta + math.radians(45)))
+            angle_to_right = self.normalize_angle(desired_angle - (self.theta - math.radians(45)))
+            
+            if (directions["left"] or directions["far_left"]) and (directions["right"] or directions["far_right"]):
+                if abs(angle_to_left) < abs(angle_to_right):
+                    self.theta += math.radians(90)
+                else:
+                    self.theta -= math.radians(90)
+            elif (directions["front"] and directions["left"]) or (directions["front"] and directions["far_left"]):
+                if abs(angle_to_left) < math.radians(45):
+                    self.theta += math.radians(90)
+                else:
+                    self.theta = desired_angle
+            elif (directions["front"] and directions["right"]) or (directions["front"] and directions["far_right"]):
+                if abs(angle_to_right) < math.radians(45):
+                    self.theta -= math.radians(90)
+                else:
+                    self.theta = desired_angle
+            self.v_left = self.base_speed
+            self.v_right = self.base_speed
+            return True
+        
+        return False
+
+    def control(self):
+        # Kiểm tra nếu đã đến điểm ra
+        if math.dist((self.x_pos, self.y_pos), self.exit_pos) < 10:
             self.v_left = 0
             self.v_right = 0
             self.status = "Finish"
             print("Đã đến điểm ra!")
             return
         
-        # Ưu tiên đi thẳng xuống (hướng theta = 270°)
-        if front_dist > front_threshold:
-            self.v_left = base_speed
-            self.v_right = base_speed
-            print("Đi thẳng xuống để dò đường!")
+        # Kiểm tra hướng khởi đầu
+        if self.initial_check and self.initial_steps < self.initial_max_steps:
+            self.initial_steps += 1
+            if self.initial_direction_check():
+                self.initial_check = False
             return
         
-        # Nếu không đi thẳng xuống được, thử đi thẳng phải (hướng theta = 0°)
-        if right_dist > side_threshold:
-            self.theta = self.normalize_angle(0)  # Điều chỉnh về hướng phải
-            self.v_left = base_speed
-            self.v_right = base_speed
-            print("Chuyển sang đi thẳng phải!")
+        # Tính góc đến mục tiêu
+        dx = self.exit_pos[0] - self.x_pos
+        dy = self.exit_pos[1] - self.y_pos
+        desired_angle = math.atan2(dy, dx)
+        angle_diff = self.normalize_angle(desired_angle - self.theta)
+        
+        # Ngưỡng khoảng cách
+        wall_threshold = 30
+        safe_distance = 15
+        stop_distance = 10
+        narrow_corridor_threshold = 20
+        
+        # Điều chỉnh tốc độ
+        speed_factor = 0.5
+        if self.front_sensor < safe_distance:
+            speed_factor = max(0.1, self.front_sensor / safe_distance)
+            if self.front_sensor < stop_distance:
+                self.v_left = 0
+                self.v_right = 0
+                return
+        
+        # Kiểm tra hành lang hẹp
+        if (self.left_sensor < narrow_corridor_threshold and self.right_sensor < narrow_corridor_threshold and
+            self.front_sensor > wall_threshold):
+            angle_to_left = self.normalize_angle(desired_angle - (self.theta + math.radians(45)))
+            angle_to_right = self.normalize_angle(desired_angle - (self.theta - math.radians(45)))
+            
+            if abs(angle_to_left) < abs(angle_to_right):
+                self.theta += math.radians(90)
+            else:
+                self.theta -= math.radians(90)
+            self.v_left = -10
+            self.v_right = 10
             return
         
-        # Nếu cả hai hướng không khả thi, xoay 90° sang trái hoặc phải dựa trên khoảng cách lớn nhất
-        if left_dist > right_dist and left_dist > side_threshold:
-            self.theta = self.normalize_angle(self.theta - math.radians(90))  # Xoay trái 90°
-            print("Xoay trái 90° để tìm đường!")
-        elif right_dist > side_threshold:
-            self.theta = self.normalize_angle(self.theta + math.radians(90))  # Xoay phải 90°
-            print("Xoay phải 90° để tìm đường!")
+        # Kiểm tra đường thẳng
+        if self.front_sensor > 100 and min(self.left_sensor, self.right_sensor) < 20:
+            if self.left_sensor > self.right_sensor or self.far_left_sensor > self.far_right_sensor:
+                self.theta += math.radians(45)
+            else:
+                self.theta -= math.radians(45)
+            self.v_left = self.base_speed * speed_factor
+            self.v_right = self.base_speed * speed_factor
+            return
+        
+        # Chiến lược điều hướng
+        if self.front_sensor > wall_threshold:
+            if abs(angle_diff) > math.radians(5):
+                turn_speed = 15 * speed_factor if angle_diff > 0 else -15 * speed_factor
+                self.v_left = -turn_speed
+                self.v_right = turn_speed
+            else:
+                self.v_left = self.base_speed * speed_factor
+                self.v_right = self.base_speed * speed_factor
+                self.theta = desired_angle
         else:
-            print("Kẹt, thử điều chỉnh hướng!")
-        
-        self.v_left = base_speed
-        self.v_right = base_speed
-
-    def draw_sensors(self, map, env):
-        sensor_angles = [self.theta - math.radians(45), self.theta, self.theta + math.radians(45)]
-        colors = [env.purple, env.yellow, env.orange]
-        
-        half_width = self.width // 2
-        for i, angle in enumerate(sensor_angles):
-            start_x = self.x_pos + half_width * math.cos(angle)
-            start_y = self.y_pos + half_width * math.sin(angle)
-            end_x = start_x + self.sensors[i] * math.cos(angle)
-            end_y = start_y + self.sensors[i] * math.sin(angle)
-            pg.draw.line(map, colors[i], (start_x, start_y), (end_x, end_y), 2)
+            if len(self.turn_history) >= self.max_history and all(x == 1 for x in self.turn_history[-self.max_history:]):
+                self.theta -= math.radians(random.uniform(30, 60))
+                self.turn_history.append(-1)
+            elif len(self.turn_history) >= self.max_history and all(x == -1 for x in self.turn_history[-self.max_history:]):
+                self.theta += math.radians(random.uniform(30, 60))
+                self.turn_history.append(1)
+            else:
+                # Ưu tiên rẽ trái khi phát hiện tường phải
+                if self.right_sensor < 20 and (self.left_sensor > 20 or self.far_left_sensor > 20):
+                    self.theta += math.radians(90)
+                    self.turn_history.append(1)
+                # Ưu tiên rẽ phải khi phát hiện tường trái
+                elif self.left_sensor < 20 and (self.right_sensor > 20 or self.far_right_sensor > 20):
+                    self.theta -= math.radians(90)
+                    self.turn_history.append(-1)
+                else:
+                    # Kiểm tra và điều chỉnh nếu quay ngược
+                    angle_diff = self.normalize_angle(desired_angle - self.theta)
+                    if abs(angle_diff) > math.pi / 2:
+                        self.theta = desired_angle
+                        self.v_left = self.base_speed * speed_factor
+                        self.v_right = self.base_speed * speed_factor
+                    else:
+                        # Sử dụng cảm biến xa để quyết định
+                        if (self.far_left_sensor > self.far_right_sensor and self.far_left_sensor > 20) or (self.left_sensor > self.right_sensor and self.left_sensor > 20):
+                            self.theta += math.radians(90)
+                            self.turn_history.append(1)
+                        elif (self.far_right_sensor > self.far_left_sensor and self.far_right_sensor > 20) or (self.right_sensor > self.left_sensor and self.right_sensor > 20):
+                            self.theta -= math.radians(90)
+                            self.turn_history.append(-1)
+                        else:
+                            turn_speed = 15 * speed_factor  # Mặc định rẽ trái
+                            self.v_left = -turn_speed
+                            self.v_right = turn_speed
+                            self.turn_history.append(1)
+            
+            if len(self.turn_history) > self.max_history:
+                self.turn_history.pop(0)
+            
+            self.v_left = self.base_speed * speed_factor
+            self.v_right = self.base_speed * speed_factor
 
 # Lớp Main: chạy chương trình
 class Main:
@@ -269,7 +411,7 @@ class Main:
         self.map_size = 600
         self.map = pg.display.set_mode((self.map_size, self.map_size))
         self.maps = pg.transform.scale(
-            pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\map\m3.png"),
+            pg.image.load(r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\map\a.png"),
             (self.map_size, self.map_size))
         
         start_x = 400 * (600 / 900)
@@ -278,7 +420,7 @@ class Main:
         self.robot_size = 45
         self.robot = Robot((start_x, start_y),
                            r"D:\Py\MobileRobot\Mobile-Robot\mobile-robot-f1\access\right.png",
-                           self.robot_size, self.map_size, (330, self.map_size - 10))
+                           self.robot_size, self.map_size, (330, self.map_size - 10), self.maps)
         self.running = True
         self.status = "Running"
         
@@ -294,9 +436,7 @@ class Main:
             current_time = pg.time.get_ticks()
             dt = max(0.01, (current_time - last_time) / 1000)
             
-            self.robot.sense(self.maps, self.env)
-            self.robot.control(self.maps, self.env)
-            self.robot.move(dt, self.maps)
+            self.robot.move(dt)
             self.robot.update(dt)
             
             self.env.map.fill(self.env.white)
@@ -304,9 +444,12 @@ class Main:
             self.env.frame((self.robot.x_pos, self.robot.y_pos), self.robot.theta)
             self.robot.draw(self.env.map)
             self.env.trail((self.robot.x_pos, self.robot.y_pos))
-            self.env.info((self.robot.x_pos, self.robot.y_pos), self.robot.sensors, self.status)
-            self.robot.draw_sensors(self.env.map, self.env)
-            self.env.draw_sensor_hit_points()
+            self.env.draw_sensors((self.robot.x_pos, self.robot.y_pos),
+                                 self.robot.front_pos, self.robot.left_pos, self.robot.right_pos,
+                                 self.robot.far_left_pos, self.robot.far_right_pos)
+            self.env.info((self.robot.x_pos, self.robot.y_pos), self.status,
+                          self.robot.front_sensor, self.robot.left_sensor, self.robot.right_sensor,
+                          self.robot.far_left_sensor, self.robot.far_right_sensor)
             
             pg.display.update()
             last_time = current_time

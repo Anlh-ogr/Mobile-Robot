@@ -32,10 +32,8 @@ class Environment:
         self.end = (300, 599)
                 
     def draw_points(self):
-        rect_width = 103
-        rect_height = 27
-        offset_x = rect_width // 2
-        offset_y = rect_height // 2
+        rect_width, rect_height = 103, 27
+        offset_x, offset_y = rect_width // 2, rect_height // 2
         
         # ve diem bat dau
         start_rect = pg.Rect(self.start[0] - offset_x, (self.start[1] - offset_y), rect_width, rect_height)
@@ -50,21 +48,13 @@ class Environment:
 class Robot:
     def __init__(self, start_position, image_path):
         # thong so cua robot
-        self.width = 80
+        self.width = 60
         self.x_pos = start_position[0]
         self.y_pos = start_position[1]
         self.theta = math.radians(90)
+        
         self.velocity_x = 0
         self.velocity_y = 0
-        
-        self.colors = {'red': (255, 0, 0),
-                       'green': (0, 255, 0),
-                       'blue': (0, 0, 255),
-                       'purple': (128, 0, 128),
-                       'cyan': (0, 255, 255),
-                       'yellow': (255, 223, 0),
-                       'orange': (255, 140, 0),
-                       'pink': (255, 105, 180)}
         
         # load hinh anh cua robot
         self.image = pg.transform.scale(pg.image.load(image_path), (self.width, self.width))
@@ -74,6 +64,15 @@ class Robot:
         
         # goc cam bien hoat dong (trai -> phai)
         self.sensor_angles = [-100, -45, 0, 45, 100]
+        
+        self.colors = {'red': (255, 0, 0),
+                       'green': (0, 255, 0),
+                       'blue': (0, 0, 255),
+                       'purple': (128, 0, 128),
+                       'cyan': (0, 255, 255),
+                       'yellow': (255, 223, 0),
+                       'orange': (255, 140, 0),
+                       'pink': (255, 105, 180)}
         
     def draw(self, map_surface, walls):
         # cap nhat vi tri cua robot
@@ -138,7 +137,7 @@ class Main:
         
         # load hinh nen va robot
         self.background = pg.transform.scale(pg.image.load(bg_path), (self.env.width, self.env.height))
-        self.robot = Robot((self.env.start[0], self.env.start[1]+24), robot_img_path)
+        self.robot = Robot((self.env.start[0], self.env.start[1]+49), robot_img_path)
         self.walls = []
         self.running = True
                 

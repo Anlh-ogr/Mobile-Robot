@@ -4,7 +4,7 @@ import numpy as np
 
 # Lay duong dan + doc anh
 script_dir = os.path.dirname(os.path.abspath(__file__))
-image_path = os.path.join(script_dir, "z.png")
+image_path = os.path.join(script_dir, "m4.png")
 image = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
 
 # nhi phan hoa lam ro mau tuong + nen

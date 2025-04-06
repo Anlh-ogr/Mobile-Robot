@@ -132,8 +132,8 @@ class Main:
         
         # load hinh nen va robot
         base_path = os.path.dirname(__file__)
-        bg_path = os.path.join(base_path, "..", "map", "a1.png")
-        robot_img_path = os.path.join(base_path, "..", "access", "up.png")
+        bg_path = os.path.join(base_path, "..", "map", "m1.png")
+        robot_img_path = os.path.join(base_path, "..", "access", "bot_right.png")
         
         # load hinh nen va robot
         self.background = pg.transform.scale(pg.image.load(bg_path), (self.env.width, self.env.height))

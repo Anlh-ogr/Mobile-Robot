@@ -1,0 +1,40 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/26.0.9 Chrome/128.0.6613.186 Electron/32.2.5 Safari/537.36" version="26.0.9">
+  <diagram name="Page-1" id="kg1YCNrocC6GO0OkNL-p">
+    <mxGraphModel dx="279" dy="179" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-31" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0.4;" parent="1" vertex="1">
+          <mxGeometry x="254" y="190" width="35" height="12" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-6" value="" style="shape=delay;whiteSpace=wrap;html=1;rotation=90;strokeWidth=0.4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="265.63" y="190.5" width="11.75" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-7" value="" style="shape=delay;whiteSpace=wrap;html=1;rotation=-90;strokeWidth=0.4;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="261" y="162" width="21" height="35" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-8" value="" style="shape=or;whiteSpace=wrap;html=1;strokeWidth=0.4;fillColor=light-dark(#5c5656, #ededed);movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="289" y="187" width="5" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-9" value="" style="shape=or;whiteSpace=wrap;html=1;rotation=-180;strokeWidth=0.4;fillColor=light-dark(#5d5656, #ededed);strokeColor=light-dark(#000000,#FFFFFF);perimeterSpacing=0;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="249" y="187" width="5" height="15" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-10" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;strokeWidth=0.5;fillColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="266.51" y="170" width="10" height="10" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-11" value="" style="rounded=0;whiteSpace=wrap;html=1;strokeWidth=0.3;fillColor=#000000;strokeColor=none;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="269" y="174.5" width="5" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-12" value="" style="rounded=1;whiteSpace=wrap;html=1;strokeWidth=0.2;fillColor=light-dark(#575353, #ededed);movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="270.51" y="171.5" width="2" height="7" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-23" value="" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fillColor=none;strokeWidth=0.1;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="270.25" y="190.25" width="2.5" height="2.5" as="geometry" />
+        </mxCell>
+        <mxCell id="RP6MpVQTFjgYOarHXQmH-28" value="" style="shape=umlDestroy;whiteSpace=wrap;html=1;strokeWidth=0.1;targetShapes=umlLifeline;rotation=-45;movable=1;resizable=1;rotatable=1;deletable=1;editable=1;locked=0;connectable=1;" parent="1" vertex="1">
+          <mxGeometry x="269.75" y="189.75" width="3.5" height="3.5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -1,0 +1,30 @@
+Iteration 0: 183.65544494808677
+Iteration 1: 147.86282700811648
+Iteration 2: 107.05548027965887
+Iteration 3: 107.05548027965887
+Iteration 4: 107.05548027965887
+Iteration 5: 57.52277420751278
+Iteration 6: 57.52277420751278
+Iteration 7: 57.52277420751278
+Iteration 8: 57.52277420751278
+Iteration 9: 57.52277420751278
+Iteration 10: 57.115170649926256
+Iteration 11: -92.03067047522828
+Iteration 12: -92.03067047522828
+Iteration 13: -92.03067047522828
+Iteration 14: -245.37625591400223
+Iteration 15: -325.63749726914534
+Iteration 16: -368.3871412875e587
+Iteration 17: -458.8018436291415
+Iteration 18: -491.8436158413586
+Iteration 19: -539.5855236513241
+Iteration 20: -606.0791618623011
+Iteration 21: -672.7300767821566
+Iteration 22: -792.4133884205785
+Robot has reached the goal!
+Iteration 23: -945.5743262454897
+A robot has successfully reached the goal! Stopping simulation...
+Replaying best path with 1 robot...
+Robot starting position in replay: (260.7724701519427, 6.0, 0.08651883469303934)
+Robot has reached the goal!
+Replay data saved to replay_path.json
